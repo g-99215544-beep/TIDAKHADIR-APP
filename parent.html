@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Laporan Ketidakhadiran Murid - SKSA</title>
+<link rel="icon" href="./icon-192.png" />
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);
+    min-height: 100vh;
+    color: #1f2937;
+  }
+  header {
+    background: linear-gradient(135deg, #15803d 0%, #16a34a 100%);
+    color: #fff;
+    padding: 16px 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.08);
+    position: sticky; top: 0; z-index: 10;
+  }
+  .header-row { display: flex; align-items: center; gap: 12px; max-width: 720px; margin: 0 auto; }
+  .header-row img { width: 44px; height: 44px; border-radius: 8px; background: #fff; padding: 2px; }
+  .header-text h1 { margin: 0; font-size: 1.05rem; font-weight: 700; }
+  .header-text p { margin: 2px 0 0; font-size: .78rem; opacity: .9; }
+  .logout-btn {
+    margin-left: auto;
+    background: rgba(255,255,255,.15);
+    border: 1px solid rgba(255,255,255,.3);
+    color: #fff;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: .8rem;
+    cursor: pointer;
+  }
+  .logout-btn:hover { background: rgba(255,255,255,.25); }
+  main { max-width: 720px; margin: 0 auto; padding: 20px; }
+  .card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 22px 20px;
+    box-shadow: 0 4px 16px rgba(0,0,0,.06);
+    margin-bottom: 16px;
+  }
+  .card h2 {
+    margin: 0 0 14px;
+    font-size: 1.05rem;
+    color: #15803d;
+    display: flex; align-items: center; gap: 8px;
+  }
+  label { display: block; font-size: .85rem; font-weight: 600; color: #374151; margin: 12px 0 6px; }
+  input[type="text"], input[type="email"], input[type="password"], input[type="date"], select, input[type="file"] {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid #d1d5db;
+    background: #f9fafb;
+    font-size: .95rem;
+    font-family: inherit;
+  }
+  input:focus, select:focus { outline: none; border-color: #16a34a; background: #fff; }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 11px 18px;
+    border-radius: 999px;
+    border: none;
+    font-size: .95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform .1s, box-shadow .1s;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn-primary { background: #16a34a; color: #fff; box-shadow: 0 2px 6px rgba(22,163,74,.3); }
+  .btn-primary:hover { background: #15803d; }
+  .btn-primary:disabled { background: #9ca3af; cursor: not-allowed; box-shadow: none; }
+  .btn-block { display: flex; width: 100%; margin-top: 16px; }
+  .checkbox-row { display: flex; align-items: center; gap: 8px; margin: 12px 0 6px; }
+  .checkbox-row input { width: auto; }
+  .checkbox-row label { margin: 0; font-size: .9rem; }
+  .date-range { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .alert {
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: .85rem;
+    margin-top: 10px;
+  }
+  .alert-error { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+  .alert-success { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+  .alert-info { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+  .hint { font-size: .78rem; color: #6b7280; margin-top: 4px; }
+  .file-label {
+    display: block;
+    padding: 14px;
+    border: 2px dashed #d1d5db;
+    border-radius: 10px;
+    background: #f9fafb;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color .1s;
+  }
+  .file-label:hover { border-color: #16a34a; }
+  .file-label.has-file { border-style: solid; border-color: #16a34a; background: #f0fdf4; }
+  .file-label input { display: none; }
+  .file-name { font-size: .85rem; color: #15803d; font-weight: 600; word-break: break-all; }
+  .spinner {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid #fff;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .toast {
+    position: fixed;
+    bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: #15803d; color: #fff;
+    padding: 12px 20px; border-radius: 999px;
+    box-shadow: 0 4px 12px rgba(0,0,0,.2);
+    font-size: .9rem;
+    z-index: 100;
+    animation: slideUp .3s ease-out;
+  }
+  @keyframes slideUp { from { opacity: 0; transform: translate(-50%, 20px); } to { opacity: 1; transform: translate(-50%, 0); } }
+  .login-card { max-width: 380px; margin: 60px auto 0; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-row">
+    <img src="./icon-192.png" alt="SKSA" onerror="this.style.display='none'" />
+    <div class="header-text">
+      <h1>Laporan Ketidakhadiran</h1>
+      <p id="headerSubtitle">SK Sri Aman</p>
+    </div>
+    <button id="logoutBtn" class="logout-btn hidden">Log Keluar</button>
+  </div>
+</header>
+
+<main>
+  <!-- LOGIN -->
+  <div id="loginCard" class="card login-card">
+    <h2>🔐 Log Masuk Ibu Bapa</h2>
+    <label for="loginEmail">Emel</label>
+    <input id="loginEmail" type="email" autocomplete="username" placeholder="parent@kehadiranmurid.app" />
+    <label for="loginPassword">Kata Laluan</label>
+    <input id="loginPassword" type="password" autocomplete="current-password" placeholder="••••••••" />
+    <div id="loginAlert" class="alert alert-error hidden"></div>
+    <button id="loginBtn" class="btn btn-primary btn-block">Log Masuk</button>
+    <div class="hint" style="margin-top:12px;text-align:center;">
+      Sila gunakan kredensial yang diberikan oleh pihak sekolah.
+    </div>
+  </div>
+
+  <!-- FORM -->
+  <div id="formCard" class="card hidden">
+    <h2>📝 Laporan Ketidakhadiran Anak</h2>
+
+    <label for="classSelect">Kelas Anak</label>
+    <select id="classSelect">
+      <option value="">— Sila pilih kelas —</option>
+    </select>
+
+    <label for="studentSelect">Nama Anak</label>
+    <select id="studentSelect" disabled>
+      <option value="">— Pilih kelas dahulu —</option>
+    </select>
+
+    <div class="checkbox-row">
+      <input id="singleDayCheck" type="checkbox" checked />
+      <label for="singleDayCheck">Sehari sahaja (hari ini)</label>
+    </div>
+
+    <div id="dateRangeWrap" class="date-range hidden">
+      <div>
+        <label for="dateStart">Tarikh Mula</label>
+        <input id="dateStart" type="date" />
+      </div>
+      <div>
+        <label for="dateEnd">Tarikh Tamat</label>
+        <input id="dateEnd" type="date" />
+      </div>
+    </div>
+    <div id="singleDayInfo" class="hint">Tarikh hari ini akan digunakan secara automatik.</div>
+
+    <label for="reasonSelect">Sebab Ketidakhadiran</label>
+    <select id="reasonSelect">
+      <option value="">— Sila pilih sebab —</option>
+      <option value="Aktiviti Luar Sekolah">1. Aktiviti Luar Sekolah</option>
+      <option value="Bencana Alam">2. Bencana Alam</option>
+      <option value="Ancaman Keselamatan">3. Ancaman Keselamatan</option>
+      <option value="Masalah Keluarga">4. Masalah Keluarga</option>
+      <option value="Masalah Peribadi">5. Masalah Peribadi</option>
+      <option value="Kebenaran Guru Besar">6. Kebenaran Guru Besar</option>
+      <option value="Tiada Sebab">7. Tiada Sebab</option>
+      <option value="Masalah Kesihatan">8. Masalah Kesihatan</option>
+    </select>
+
+    <label>Bukti Ketidakhadiran (gambar / PDF / dokumen)</label>
+    <label class="file-label" id="fileLabel">
+      <input id="evidenceFile" type="file" accept="image/*,application/pdf,.doc,.docx" />
+      <div id="fileLabelText">
+        <div style="font-size:1.3rem;">📎</div>
+        <div style="font-size:.85rem;color:#6b7280;margin-top:4px;">Klik untuk pilih fail (maks 5MB)</div>
+      </div>
+    </label>
+    <div class="hint">Diterima: gambar (jpg/png/dll), PDF, atau dokumen Word.</div>
+
+    <div id="formAlert" class="alert hidden"></div>
+
+    <button id="submitBtn" class="btn btn-primary btn-block">Hantar Laporan</button>
+  </div>
+</main>
+
+<div id="toast" class="toast hidden"></div>
+
+<!--
+  ============================================================
+  SETUP NOTES (Firebase Console — perlu dibuat sekali sahaja):
+  ============================================================
+  1. Project: sk-sri-aman-database
+     - Authentication > Sign-in method > Email/Password: Aktifkan
+     - Authentication > Users > Add user:
+         Email:    parent@kehadiranmurid.app
+         Password: parent123
+     - Storage > Rules (disyorkan):
+         match /absenceEvidence/{allPaths=**} {
+           allow read: if true;
+           allow write: if request.auth != null && request.resource.size < 5*1024*1024;
+         }
+
+  2. Project: kehadiran-murid-6ece0
+     - Realtime Database tetap terbuka (UI guard sahaja).
+     - Path baru: absenceReports/{classCode}/{reportId}
+============================================================
+-->
+
+<!-- Firebase SDK (compat) -->
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
+
+<script>
+(function () {
+  'use strict';
+
+  // ============ Firebase init ============
+  // PRIMARY: Realtime Database (data kelas, murid, dan absenceReports)
+  const dbConfig = {
+    apiKey: "AIzaSyDbCgDz2vK2BZUpwM3iDWJcPQSptVcNkv4",
+    authDomain: "kehadiran-murid-6ece0.firebaseapp.com",
+    databaseURL: "https://kehadiran-murid-6ece0-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "kehadiran-murid-6ece0",
+    storageBucket: "kehadiran-murid-6ece0.firebasestorage.app",
+    messagingSenderId: "223849234784",
+    appId: "1:223849234784:web:e1471ded7ea17ba60bde05",
+    measurementId: "G-4DY138HKTW"
+  };
+  // STORAGE: simpan gambar/PDF bukti ketidakhadiran (project berasingan)
+  const storageConfig = {
+    apiKey: "AIzaSyBSWbXoKgQt1E8xvJa9zaKyw3e9V_EMxAE",
+    authDomain: "sk-sri-aman-database.firebaseapp.com",
+    databaseURL: "https://sk-sri-aman-database-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "sk-sri-aman-database",
+    storageBucket: "sk-sri-aman-database.firebasestorage.app",
+    messagingSenderId: "810640165554",
+    appId: "1:810640165554:web:b3ad2dc6f1583ec2a657ab",
+    measurementId: "G-EW575JGKQR"
+  };
+
+  const primaryApp = firebase.initializeApp(dbConfig);
+  const storageApp = firebase.initializeApp(storageConfig, 'storageApp');
+
+  const db = primaryApp.database();
+  const auth = storageApp.auth();   // Auth on storage project (because Storage rules check request.auth there)
+  const storage = storageApp.storage();
+
+  // ============ Hardcoded credential ============
+  const PARENT_EMAIL = "parent@kehadiranmurid.app";
+  const PARENT_PASSWORD = "parent123";
+  const MAX_FILE_BYTES = 5 * 1024 * 1024;
+
+  // ============ DOM refs ============
+  const loginCard = document.getElementById('loginCard');
+  const formCard = document.getElementById('formCard');
+  const loginEmail = document.getElementById('loginEmail');
+  const loginPassword = document.getElementById('loginPassword');
+  const loginBtn = document.getElementById('loginBtn');
+  const loginAlert = document.getElementById('loginAlert');
+  const logoutBtn = document.getElementById('logoutBtn');
+
+  const classSelect = document.getElementById('classSelect');
+  const studentSelect = document.getElementById('studentSelect');
+  const singleDayCheck = document.getElementById('singleDayCheck');
+  const dateRangeWrap = document.getElementById('dateRangeWrap');
+  const singleDayInfo = document.getElementById('singleDayInfo');
+  const dateStart = document.getElementById('dateStart');
+  const dateEnd = document.getElementById('dateEnd');
+  const reasonSelect = document.getElementById('reasonSelect');
+  const evidenceFile = document.getElementById('evidenceFile');
+  const fileLabel = document.getElementById('fileLabel');
+  const fileLabelText = document.getElementById('fileLabelText');
+  const formAlert = document.getElementById('formAlert');
+  const submitBtn = document.getElementById('submitBtn');
+  const toast = document.getElementById('toast');
+
+  // ============ Helpers ============
+  function showToast(msg, ms = 2800) {
+    toast.textContent = msg;
+    toast.classList.remove('hidden');
+    setTimeout(() => toast.classList.add('hidden'), ms);
+  }
+  function showAlert(el, msg, type) {
+    el.textContent = msg;
+    el.className = 'alert alert-' + type;
+    el.classList.remove('hidden');
+  }
+  function hideAlert(el) { el.classList.add('hidden'); }
+  function todayKey() {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+
+  // ============ Auth flow ============
+  auth.onAuthStateChanged(user => {
+    if (user && user.email === PARENT_EMAIL) {
+      loginCard.classList.add('hidden');
+      formCard.classList.remove('hidden');
+      logoutBtn.classList.remove('hidden');
+      loadClassesAndStudents();
+    } else {
+      loginCard.classList.remove('hidden');
+      formCard.classList.add('hidden');
+      logoutBtn.classList.add('hidden');
+    }
+  });
+
+  loginBtn.addEventListener('click', doLogin);
+  loginPassword.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+  loginEmail.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+  async function doLogin() {
+    hideAlert(loginAlert);
+    const email = loginEmail.value.trim();
+    const pwd = loginPassword.value;
+    if (!email || !pwd) {
+      showAlert(loginAlert, 'Sila masukkan emel dan kata laluan.', 'error');
+      return;
+    }
+    if (email !== PARENT_EMAIL || pwd !== PARENT_PASSWORD) {
+      showAlert(loginAlert, 'Emel atau kata laluan tidak sah.', 'error');
+      return;
+    }
+    loginBtn.disabled = true;
+    loginBtn.innerHTML = '<span class="spinner"></span> Memuatkan...';
+    try {
+      await auth.signInWithEmailAndPassword(email, pwd);
+    } catch (err) {
+      console.error(err);
+      showAlert(loginAlert, 'Log masuk gagal: ' + (err.message || err.code), 'error');
+    } finally {
+      loginBtn.disabled = false;
+      loginBtn.textContent = 'Log Masuk';
+    }
+  }
+
+  logoutBtn.addEventListener('click', () => {
+    auth.signOut();
+    loginEmail.value = '';
+    loginPassword.value = '';
+  });
+
+  // ============ Load classes & students ============
+  let classData = {};       // { "4G": ["Ali", "Siti", ...] }
+  let summaryConfig = [];   // [{code, darjah, kelasLabel, students}, ...]
+
+  async function loadClassesAndStudents() {
+    classSelect.innerHTML = '<option value="">⏳ Memuatkan...</option>';
+    try {
+      const snap = await db.ref('config/classes').once('value');
+      const config = snap.val() || {};
+      summaryConfig = Array.isArray(config.summaryConfig) ? config.summaryConfig : [];
+      classData = config.classData || {};
+
+      classSelect.innerHTML = '<option value="">— Sila pilih kelas —</option>';
+      summaryConfig.forEach(cfg => {
+        const opt = document.createElement('option');
+        opt.value = cfg.code;
+        opt.textContent = cfg.code + ' - ' + cfg.kelasLabel;
+        classSelect.appendChild(opt);
+      });
+    } catch (err) {
+      console.error(err);
+      classSelect.innerHTML = '<option value="">Gagal memuatkan kelas</option>';
+      showAlert(formAlert, 'Gagal memuatkan senarai kelas: ' + err.message, 'error');
+    }
+  }
+
+  classSelect.addEventListener('change', () => {
+    const code = classSelect.value;
+    studentSelect.innerHTML = '<option value="">— Sila pilih nama anak —</option>';
+    const names = classData[code] || [];
+    if (!code) {
+      studentSelect.innerHTML = '<option value="">— Pilih kelas dahulu —</option>';
+      studentSelect.disabled = true;
+      return;
+    }
+    if (!names.length) {
+      studentSelect.innerHTML = '<option value="">Tiada senarai murid</option>';
+      studentSelect.disabled = true;
+      return;
+    }
+    names.forEach(name => {
+      const opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name;
+      studentSelect.appendChild(opt);
+    });
+    studentSelect.disabled = false;
+  });
+
+  // ============ Date toggle ============
+  singleDayCheck.addEventListener('change', () => {
+    if (singleDayCheck.checked) {
+      dateRangeWrap.classList.add('hidden');
+      singleDayInfo.classList.remove('hidden');
+    } else {
+      dateRangeWrap.classList.remove('hidden');
+      singleDayInfo.classList.add('hidden');
+      const t = todayKey();
+      if (!dateStart.value) dateStart.value = t;
+      if (!dateEnd.value) dateEnd.value = t;
+    }
+  });
+
+  // ============ File picker ============
+  evidenceFile.addEventListener('change', () => {
+    const file = evidenceFile.files[0];
+    if (!file) {
+      fileLabel.classList.remove('has-file');
+      fileLabelText.innerHTML = '<div style="font-size:1.3rem;">📎</div><div style="font-size:.85rem;color:#6b7280;margin-top:4px;">Klik untuk pilih fail (maks 5MB)</div>';
+      return;
+    }
+    if (file.size > MAX_FILE_BYTES) {
+      showAlert(formAlert, 'Fail terlalu besar. Maksimum 5 MB. Saiz fail anda: ' + (file.size / 1024 / 1024).toFixed(1) + ' MB.', 'error');
+      evidenceFile.value = '';
+      fileLabel.classList.remove('has-file');
+      return;
+    }
+    hideAlert(formAlert);
+    fileLabel.classList.add('has-file');
+    fileLabelText.innerHTML = '<div style="font-size:1.3rem;">✅</div><div class="file-name">' + escapeHtml(file.name) + '</div><div style="font-size:.75rem;color:#6b7280;margin-top:2px;">' + (file.size / 1024).toFixed(0) + ' KB</div>';
+  });
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  // ============ Submit ============
+  submitBtn.addEventListener('click', submitReport);
+
+  async function submitReport() {
+    hideAlert(formAlert);
+
+    // Validate
+    const classCode = classSelect.value;
+    const studentName = studentSelect.value;
+    const reason = reasonSelect.value;
+    const file = evidenceFile.files[0];
+
+    if (!classCode) return showAlert(formAlert, 'Sila pilih kelas.', 'error');
+    if (!studentName) return showAlert(formAlert, 'Sila pilih nama anak.', 'error');
+    if (!reason) return showAlert(formAlert, 'Sila pilih sebab ketidakhadiran.', 'error');
+    if (!file) return showAlert(formAlert, 'Sila lampirkan bukti ketidakhadiran.', 'error');
+
+    let startDate, endDate;
+    if (singleDayCheck.checked) {
+      startDate = endDate = todayKey();
+    } else {
+      startDate = dateStart.value;
+      endDate = dateEnd.value;
+      if (!startDate || !endDate) return showAlert(formAlert, 'Sila pilih tarikh mula dan tamat.', 'error');
+      if (endDate < startDate) return showAlert(formAlert, 'Tarikh tamat mesti selepas atau sama dengan tarikh mula.', 'error');
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner"></span> Menghantar...';
+
+    try {
+      // 1. Generate report ID
+      const reportRef = db.ref('absenceReports/' + classCode).push();
+      const reportId = reportRef.key;
+
+      // 2. Upload file to Storage (sk-sri-aman-database)
+      const safeFilename = file.name.replace(/[^\w.\-]/g, '_');
+      const storagePath = 'absenceEvidence/' + classCode + '/' + reportId + '/' + safeFilename;
+      const fileRef = storage.ref(storagePath);
+      const uploadSnap = await fileRef.put(file, { contentType: file.type });
+      const evidenceUrl = await uploadSnap.ref.getDownloadURL();
+
+      // 3. Write report record to RTDB
+      const reportData = {
+        studentName: studentName,
+        reason: reason,
+        dateStart: startDate,
+        dateEnd: endDate,
+        evidenceUrl: evidenceUrl,
+        evidenceFilename: file.name,
+        evidenceContentType: file.type || 'application/octet-stream',
+        evidenceStoragePath: storagePath,
+        status: 'pending',
+        submittedAt: firebase.database.ServerValue.TIMESTAMP,
+        submittedByEmail: auth.currentUser ? auth.currentUser.email : PARENT_EMAIL,
+        reviewedAt: null,
+        reviewedBy: null
+      };
+      await reportRef.set(reportData);
+
+      // 4. Reset form
+      showToast('✅ Laporan berjaya dihantar. Guru kelas akan semak.');
+      resetForm();
+    } catch (err) {
+      console.error(err);
+      showAlert(formAlert, 'Gagal menghantar laporan: ' + (err.message || err.code || 'ralat tidak diketahui'), 'error');
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = 'Hantar Laporan';
+    }
+  }
+
+  function resetForm() {
+    classSelect.value = '';
+    studentSelect.innerHTML = '<option value="">— Pilih kelas dahulu —</option>';
+    studentSelect.disabled = true;
+    singleDayCheck.checked = true;
+    dateRangeWrap.classList.add('hidden');
+    singleDayInfo.classList.remove('hidden');
+    dateStart.value = '';
+    dateEnd.value = '';
+    reasonSelect.value = '';
+    evidenceFile.value = '';
+    fileLabel.classList.remove('has-file');
+    fileLabelText.innerHTML = '<div style="font-size:1.3rem;">📎</div><div style="font-size:.85rem;color:#6b7280;margin-top:4px;">Klik untuk pilih fail (maks 5MB)</div>';
+  }
+
+  // Default placeholder email/pwd to ease testing (still required to be typed)
+  loginEmail.placeholder = PARENT_EMAIL;
+
+})();
+</script>
+</body>
+</html>
