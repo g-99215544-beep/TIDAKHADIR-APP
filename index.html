@@ -156,10 +156,10 @@
   </div>
 </header>
 
-<!-- Loading overlay (initial auth) -->
+<!-- Loading overlay (initial load) -->
 <div id="initLoading" class="loading-overlay">
   <div class="spinner"></div>
-  <div class="msg">Memulakan app...</div>
+  <div class="msg">Memuatkan...</div>
 </div>
 
 <main>
@@ -248,24 +248,22 @@
   SETUP (Firebase Console — sekali sahaja):
   ============================================================
   1. Project: sk-sri-aman-database
-     - Authentication > Sign-in method > Email/Password: Aktifkan
-     - Authentication > Users > Add user:
-         Email:    parent@kehadiranmurid.app
-         Password: parent123
-     - Storage > Rules: ada peraturan untuk path /absenceEvidence/**
+     - Storage > Rules: benarkan write tanpa auth tetapi dengan
+       had saiz (5 MB) + content-type whitelist (lihat rules
+       dalam README/repo).
 
   2. Project: kehadiran-murid-6ece0
-     - Path baru: studentIC/{ic} = { name, classCode }
-     - Path baru: absenceReports/{classCode}/{reportId}
+     - Realtime Database kekal public (tiada auth).
+     - Path: studentIC/{ic} = { name, classCode }
+     - Path: absenceReports/{classCode}/{reportId}
 
-  Parent app auto-login dengan kredensial hardcoded di bawah.
-  Parent hanya perlu masukkan IC anak untuk identify diri.
+  Parent app tidak guna Firebase Auth — sesiapa boleh buka,
+  parent hanya perlu masukkan IC anak untuk identify diri.
 ============================================================
 -->
 
 <!-- Firebase SDK (compat) -->
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
 
@@ -299,11 +297,8 @@
   const storageApp = firebase.initializeApp(storageConfig, 'storageApp');
 
   const db = primaryApp.database();
-  const auth = storageApp.auth();
   const storage = storageApp.storage();
 
-  const PARENT_EMAIL = "parent@kehadiranmurid.app";
-  const PARENT_PASSWORD = "parent123";
   const MAX_FILE_BYTES = 5 * 1024 * 1024;
 
   // ============ DOM refs ============
@@ -335,8 +330,7 @@
   const toast = document.getElementById('toast');
 
   // ============ State ============
-  let currentStudent = null; // { ic, name, classCode, classLabel }
-  let summaryConfig = [];    // for class label lookup
+  let currentStudent = null; // { ic, name, classCode }
 
   // ============ Helpers ============
   function showToast(msg, ms = 2800) {
@@ -358,25 +352,8 @@
     return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
 
-  // ============ Init: silent auth ============
-  async function init() {
-    try {
-      await auth.signInWithEmailAndPassword(PARENT_EMAIL, PARENT_PASSWORD);
-    } catch (err) {
-      console.error('Auth failed:', err);
-      initLoading.innerHTML = '<div style="color:#b91c1c;padding:20px;text-align:center;"><strong>Gagal memulakan app.</strong><br><br>' + escapeHtml(err.message || err.code) + '<br><br>Sila hubungi pihak sekolah.</div>';
-      return;
-    }
-
-    // Preload class config for labels
-    try {
-      const snap = await db.ref('config/classes').once('value');
-      const config = snap.val() || {};
-      summaryConfig = Array.isArray(config.summaryConfig) ? config.summaryConfig : [];
-    } catch (err) {
-      console.warn('Could not preload class config:', err);
-    }
-
+  // ============ Init ============
+  function init() {
     initLoading.classList.add('hidden');
     icCard.classList.remove('hidden');
     setTimeout(() => icInput.focus(), 100);
@@ -420,13 +397,9 @@
         return;
       }
 
-      // Find class label
-      const classInfo = summaryConfig.find(c => c.code === record.classCode);
-      const classLabel = classInfo ? (record.classCode + ' - ' + classInfo.kelasLabel) : record.classCode;
-
-      currentStudent = { ic, name: record.name, classCode: record.classCode, classLabel };
+      currentStudent = { ic, name: record.name, classCode: record.classCode };
       foundName.textContent = record.name;
-      foundMeta.textContent = 'Kelas: ' + classLabel;
+      foundMeta.textContent = 'Kelas: ' + record.classCode;
       studentFound.classList.remove('hidden');
     } catch (err) {
       console.error(err);
@@ -441,7 +414,7 @@
   proceedBtn.addEventListener('click', () => {
     if (!currentStudent) return;
     formStudentName.textContent = currentStudent.name;
-    formClassCode.textContent = 'Kelas: ' + currentStudent.classLabel;
+    formClassCode.textContent = 'Kelas: ' + currentStudent.classCode;
     icCard.classList.add('hidden');
     formCard.classList.remove('hidden');
   });
@@ -543,7 +516,6 @@
         evidenceStoragePath: storagePath,
         status: 'pending',
         submittedAt: firebase.database.ServerValue.TIMESTAMP,
-        submittedByEmail: auth.currentUser ? auth.currentUser.email : PARENT_EMAIL,
         reviewedAt: null,
         reviewedBy: null
       };
