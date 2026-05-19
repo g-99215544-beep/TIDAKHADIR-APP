@@ -25,17 +25,6 @@
   .header-row img { width: 44px; height: 44px; border-radius: 8px; background: #fff; padding: 2px; }
   .header-text h1 { margin: 0; font-size: 1.05rem; font-weight: 700; }
   .header-text p { margin: 2px 0 0; font-size: .78rem; opacity: .9; }
-  .logout-btn {
-    margin-left: auto;
-    background: rgba(255,255,255,.15);
-    border: 1px solid rgba(255,255,255,.3);
-    color: #fff;
-    padding: 6px 12px;
-    border-radius: 999px;
-    font-size: .8rem;
-    cursor: pointer;
-  }
-  .logout-btn:hover { background: rgba(255,255,255,.25); }
   main { max-width: 720px; margin: 0 auto; padding: 20px; }
   .card {
     background: #fff;
@@ -51,7 +40,7 @@
     display: flex; align-items: center; gap: 8px;
   }
   label { display: block; font-size: .85rem; font-weight: 600; color: #374151; margin: 12px 0 6px; }
-  input[type="text"], input[type="email"], input[type="password"], input[type="date"], select, input[type="file"] {
+  input[type="text"], input[type="date"], select, input[type="file"] {
     width: 100%;
     padding: 10px 12px;
     border-radius: 10px;
@@ -61,6 +50,7 @@
     font-family: inherit;
   }
   input:focus, select:focus { outline: none; border-color: #16a34a; background: #fff; }
+  .ic-input { font-family: monospace; font-size: 1.1rem !important; letter-spacing: 2px; text-align: center; }
   .btn {
     display: inline-flex; align-items: center; justify-content: center; gap: 6px;
     padding: 11px 18px;
@@ -69,12 +59,13 @@
     font-size: .95rem;
     font-weight: 600;
     cursor: pointer;
-    transition: transform .1s, box-shadow .1s;
+    transition: transform .1s;
   }
   .btn:active { transform: scale(.97); }
   .btn-primary { background: #16a34a; color: #fff; box-shadow: 0 2px 6px rgba(22,163,74,.3); }
   .btn-primary:hover { background: #15803d; }
   .btn-primary:disabled { background: #9ca3af; cursor: not-allowed; box-shadow: none; }
+  .btn-outline { background: #fff; color: #15803d; border: 1px solid #16a34a; }
   .btn-block { display: flex; width: 100%; margin-top: 16px; }
   .checkbox-row { display: flex; align-items: center; gap: 8px; margin: 12px 0 6px; }
   .checkbox-row input { width: auto; }
@@ -107,7 +98,7 @@
   .spinner {
     display: inline-block;
     width: 14px; height: 14px;
-    border: 2px solid #fff;
+    border: 2px solid currentColor;
     border-top-color: transparent;
     border-radius: 50%;
     animation: spin 0.7s linear infinite;
@@ -124,8 +115,33 @@
     animation: slideUp .3s ease-out;
   }
   @keyframes slideUp { from { opacity: 0; transform: translate(-50%, 20px); } to { opacity: 1; transform: translate(-50%, 0); } }
-  .login-card { max-width: 380px; margin: 60px auto 0; }
+  .ic-card { max-width: 420px; margin: 40px auto 0; }
+  .student-found {
+    background: #f0fdf4;
+    border: 2px solid #16a34a;
+    border-radius: 12px;
+    padding: 16px;
+    margin-top: 14px;
+  }
+  .student-found .name { font-size: 1.05rem; font-weight: 700; color: #15803d; }
+  .student-found .meta { font-size: .85rem; color: #374151; margin-top: 4px; }
+  .pre-info {
+    background: #ecfdf5;
+    border-left: 4px solid #16a34a;
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-bottom: 14px;
+  }
   .hidden { display: none !important; }
+  .loading-overlay {
+    position: fixed; inset: 0;
+    background: rgba(255,255,255,.85);
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 10px;
+    z-index: 1000;
+  }
+  .loading-overlay .spinner { width: 32px; height: 32px; border-width: 3px; color: #16a34a; }
+  .loading-overlay .msg { color: #15803d; font-size: .9rem; font-weight: 600; }
 </style>
 </head>
 <body>
@@ -135,40 +151,49 @@
     <img src="./icon-192.png" alt="SKSA" onerror="this.style.display='none'" />
     <div class="header-text">
       <h1>Laporan Ketidakhadiran</h1>
-      <p id="headerSubtitle">SK Sri Aman</p>
+      <p>SK Sri Aman</p>
     </div>
-    <button id="logoutBtn" class="logout-btn hidden">Log Keluar</button>
   </div>
 </header>
 
+<!-- Loading overlay (initial auth) -->
+<div id="initLoading" class="loading-overlay">
+  <div class="spinner"></div>
+  <div class="msg">Memulakan app...</div>
+</div>
+
 <main>
-  <!-- LOGIN -->
-  <div id="loginCard" class="card login-card">
-    <h2>🔐 Log Masuk Ibu Bapa</h2>
-    <label for="loginEmail">Emel</label>
-    <input id="loginEmail" type="email" autocomplete="username" placeholder="parent@kehadiranmurid.app" />
-    <label for="loginPassword">Kata Laluan</label>
-    <input id="loginPassword" type="password" autocomplete="current-password" placeholder="••••••••" />
-    <div id="loginAlert" class="alert alert-error hidden"></div>
-    <button id="loginBtn" class="btn btn-primary btn-block">Log Masuk</button>
-    <div class="hint" style="margin-top:12px;text-align:center;">
-      Sila gunakan kredensial yang diberikan oleh pihak sekolah.
+  <!-- IC LOOKUP SCREEN -->
+  <div id="icCard" class="card ic-card hidden">
+    <h2>🪪 Semak Maklumat Anak</h2>
+    <p style="font-size:.85rem;color:#6b7280;margin:0 0 12px;">Sila masukkan nombor IC anak anda untuk teruskan.</p>
+
+    <label for="icInput">No. IC Anak (12 digit, tanpa sengkang)</label>
+    <input id="icInput" type="text" inputmode="numeric" maxlength="12" placeholder="010101010101" class="ic-input" autocomplete="off" />
+
+    <div id="icAlert" class="alert hidden"></div>
+
+    <button id="semakBtn" class="btn btn-primary btn-block">🔍 Semak</button>
+
+    <!-- Student found display -->
+    <div id="studentFound" class="student-found hidden">
+      <div style="font-size:.75rem;color:#15803d;font-weight:600;text-transform:uppercase;letter-spacing:.5px;">✓ Murid Dijumpai</div>
+      <div class="name" id="foundName">—</div>
+      <div class="meta" id="foundMeta">—</div>
+      <button id="proceedBtn" class="btn btn-primary btn-block" style="margin-top:10px;">Teruskan ➜</button>
     </div>
   </div>
 
   <!-- FORM -->
   <div id="formCard" class="card hidden">
-    <h2>📝 Laporan Ketidakhadiran Anak</h2>
+    <h2>📝 Laporan Ketidakhadiran</h2>
 
-    <label for="classSelect">Kelas Anak</label>
-    <select id="classSelect">
-      <option value="">— Sila pilih kelas —</option>
-    </select>
-
-    <label for="studentSelect">Nama Anak</label>
-    <select id="studentSelect" disabled>
-      <option value="">— Pilih kelas dahulu —</option>
-    </select>
+    <div class="pre-info">
+      <div style="font-size:.75rem;color:#15803d;font-weight:600;">Anak:</div>
+      <div style="font-weight:700;color:#15803d;" id="formStudentName">—</div>
+      <div style="font-size:.8rem;color:#374151;" id="formClassCode">—</div>
+      <button id="changeStudentBtn" class="btn btn-outline" style="margin-top:8px;font-size:.78rem;padding:6px 12px;">↺ Tukar anak</button>
+    </div>
 
     <div class="checkbox-row">
       <input id="singleDayCheck" type="checkbox" checked />
@@ -220,22 +245,21 @@
 
 <!--
   ============================================================
-  SETUP NOTES (Firebase Console — perlu dibuat sekali sahaja):
+  SETUP (Firebase Console — sekali sahaja):
   ============================================================
   1. Project: sk-sri-aman-database
      - Authentication > Sign-in method > Email/Password: Aktifkan
      - Authentication > Users > Add user:
          Email:    parent@kehadiranmurid.app
          Password: parent123
-     - Storage > Rules (disyorkan):
-         match /absenceEvidence/{allPaths=**} {
-           allow read: if true;
-           allow write: if request.auth != null && request.resource.size < 5*1024*1024;
-         }
+     - Storage > Rules: ada peraturan untuk path /absenceEvidence/**
 
   2. Project: kehadiran-murid-6ece0
-     - Realtime Database tetap terbuka (UI guard sahaja).
+     - Path baru: studentIC/{ic} = { name, classCode }
      - Path baru: absenceReports/{classCode}/{reportId}
+
+  Parent app auto-login dengan kredensial hardcoded di bawah.
+  Parent hanya perlu masukkan IC anak untuk identify diri.
 ============================================================
 -->
 
@@ -250,7 +274,6 @@
   'use strict';
 
   // ============ Firebase init ============
-  // PRIMARY: Realtime Database (data kelas, murid, dan absenceReports)
   const dbConfig = {
     apiKey: "AIzaSyDbCgDz2vK2BZUpwM3iDWJcPQSptVcNkv4",
     authDomain: "kehadiran-murid-6ece0.firebaseapp.com",
@@ -261,7 +284,6 @@
     appId: "1:223849234784:web:e1471ded7ea17ba60bde05",
     measurementId: "G-4DY138HKTW"
   };
-  // STORAGE: simpan gambar/PDF bukti ketidakhadiran (project berasingan)
   const storageConfig = {
     apiKey: "AIzaSyBSWbXoKgQt1E8xvJa9zaKyw3e9V_EMxAE",
     authDomain: "sk-sri-aman-database.firebaseapp.com",
@@ -277,25 +299,28 @@
   const storageApp = firebase.initializeApp(storageConfig, 'storageApp');
 
   const db = primaryApp.database();
-  const auth = storageApp.auth();   // Auth on storage project (because Storage rules check request.auth there)
+  const auth = storageApp.auth();
   const storage = storageApp.storage();
 
-  // ============ Hardcoded credential ============
   const PARENT_EMAIL = "parent@kehadiranmurid.app";
   const PARENT_PASSWORD = "parent123";
   const MAX_FILE_BYTES = 5 * 1024 * 1024;
 
   // ============ DOM refs ============
-  const loginCard = document.getElementById('loginCard');
+  const initLoading = document.getElementById('initLoading');
+  const icCard = document.getElementById('icCard');
   const formCard = document.getElementById('formCard');
-  const loginEmail = document.getElementById('loginEmail');
-  const loginPassword = document.getElementById('loginPassword');
-  const loginBtn = document.getElementById('loginBtn');
-  const loginAlert = document.getElementById('loginAlert');
-  const logoutBtn = document.getElementById('logoutBtn');
+  const icInput = document.getElementById('icInput');
+  const semakBtn = document.getElementById('semakBtn');
+  const icAlert = document.getElementById('icAlert');
+  const studentFound = document.getElementById('studentFound');
+  const foundName = document.getElementById('foundName');
+  const foundMeta = document.getElementById('foundMeta');
+  const proceedBtn = document.getElementById('proceedBtn');
 
-  const classSelect = document.getElementById('classSelect');
-  const studentSelect = document.getElementById('studentSelect');
+  const formStudentName = document.getElementById('formStudentName');
+  const formClassCode = document.getElementById('formClassCode');
+  const changeStudentBtn = document.getElementById('changeStudentBtn');
   const singleDayCheck = document.getElementById('singleDayCheck');
   const dateRangeWrap = document.getElementById('dateRangeWrap');
   const singleDayInfo = document.getElementById('singleDayInfo');
@@ -308,6 +333,10 @@
   const formAlert = document.getElementById('formAlert');
   const submitBtn = document.getElementById('submitBtn');
   const toast = document.getElementById('toast');
+
+  // ============ State ============
+  let currentStudent = null; // { ic, name, classCode, classLabel }
+  let summaryConfig = [];    // for class label lookup
 
   // ============ Helpers ============
   function showToast(msg, ms = 2800) {
@@ -325,103 +354,106 @@
     const d = new Date();
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   }
-
-  // ============ Auth flow ============
-  auth.onAuthStateChanged(user => {
-    if (user && user.email === PARENT_EMAIL) {
-      loginCard.classList.add('hidden');
-      formCard.classList.remove('hidden');
-      logoutBtn.classList.remove('hidden');
-      loadClassesAndStudents();
-    } else {
-      loginCard.classList.remove('hidden');
-      formCard.classList.add('hidden');
-      logoutBtn.classList.add('hidden');
-    }
-  });
-
-  loginBtn.addEventListener('click', doLogin);
-  loginPassword.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
-  loginEmail.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
-
-  async function doLogin() {
-    hideAlert(loginAlert);
-    const email = loginEmail.value.trim();
-    const pwd = loginPassword.value;
-    if (!email || !pwd) {
-      showAlert(loginAlert, 'Sila masukkan emel dan kata laluan.', 'error');
-      return;
-    }
-    if (email !== PARENT_EMAIL || pwd !== PARENT_PASSWORD) {
-      showAlert(loginAlert, 'Emel atau kata laluan tidak sah.', 'error');
-      return;
-    }
-    loginBtn.disabled = true;
-    loginBtn.innerHTML = '<span class="spinner"></span> Memuatkan...';
-    try {
-      await auth.signInWithEmailAndPassword(email, pwd);
-    } catch (err) {
-      console.error(err);
-      showAlert(loginAlert, 'Log masuk gagal: ' + (err.message || err.code), 'error');
-    } finally {
-      loginBtn.disabled = false;
-      loginBtn.textContent = 'Log Masuk';
-    }
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
 
-  logoutBtn.addEventListener('click', () => {
-    auth.signOut();
-    loginEmail.value = '';
-    loginPassword.value = '';
-  });
+  // ============ Init: silent auth ============
+  async function init() {
+    try {
+      await auth.signInWithEmailAndPassword(PARENT_EMAIL, PARENT_PASSWORD);
+    } catch (err) {
+      console.error('Auth failed:', err);
+      initLoading.innerHTML = '<div style="color:#b91c1c;padding:20px;text-align:center;"><strong>Gagal memulakan app.</strong><br><br>' + escapeHtml(err.message || err.code) + '<br><br>Sila hubungi pihak sekolah.</div>';
+      return;
+    }
 
-  // ============ Load classes & students ============
-  let classData = {};       // { "4G": ["Ali", "Siti", ...] }
-  let summaryConfig = [];   // [{code, darjah, kelasLabel, students}, ...]
-
-  async function loadClassesAndStudents() {
-    classSelect.innerHTML = '<option value="">⏳ Memuatkan...</option>';
+    // Preload class config for labels
     try {
       const snap = await db.ref('config/classes').once('value');
       const config = snap.val() || {};
       summaryConfig = Array.isArray(config.summaryConfig) ? config.summaryConfig : [];
-      classData = config.classData || {};
+    } catch (err) {
+      console.warn('Could not preload class config:', err);
+    }
 
-      classSelect.innerHTML = '<option value="">— Sila pilih kelas —</option>';
-      summaryConfig.forEach(cfg => {
-        const opt = document.createElement('option');
-        opt.value = cfg.code;
-        opt.textContent = cfg.code + ' - ' + cfg.kelasLabel;
-        classSelect.appendChild(opt);
-      });
+    initLoading.classList.add('hidden');
+    icCard.classList.remove('hidden');
+    setTimeout(() => icInput.focus(), 100);
+  }
+  init();
+
+  // ============ IC input behaviour ============
+  icInput.addEventListener('input', () => {
+    // Strip non-digits, limit to 12
+    icInput.value = icInput.value.replace(/\D/g, '').slice(0, 12);
+    // Hide any previous found-state when user types new IC
+    if (studentFound.classList.contains('hidden')) return;
+    studentFound.classList.add('hidden');
+  });
+  icInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      doSemak();
+    }
+  });
+  semakBtn.addEventListener('click', doSemak);
+
+  async function doSemak() {
+    hideAlert(icAlert);
+    studentFound.classList.add('hidden');
+
+    const ic = icInput.value.trim();
+    if (!ic) return showAlert(icAlert, 'Sila masukkan nombor IC.', 'error');
+    if (ic.length !== 12 || !/^\d{12}$/.test(ic)) {
+      return showAlert(icAlert, 'IC mesti 12 digit (nombor sahaja, tanpa sengkang).', 'error');
+    }
+
+    semakBtn.disabled = true;
+    semakBtn.innerHTML = '<span class="spinner"></span> Mencari...';
+
+    try {
+      const snap = await db.ref('studentIC/' + ic).once('value');
+      const record = snap.val();
+      if (!record || !record.name || !record.classCode) {
+        showAlert(icAlert, 'IC tidak ditemui dalam sistem. Sila pastikan IC anak betul, atau hubungi pihak sekolah.', 'error');
+        return;
+      }
+
+      // Find class label
+      const classInfo = summaryConfig.find(c => c.code === record.classCode);
+      const classLabel = classInfo ? (record.classCode + ' - ' + classInfo.kelasLabel) : record.classCode;
+
+      currentStudent = { ic, name: record.name, classCode: record.classCode, classLabel };
+      foundName.textContent = record.name;
+      foundMeta.textContent = 'Kelas: ' + classLabel;
+      studentFound.classList.remove('hidden');
     } catch (err) {
       console.error(err);
-      classSelect.innerHTML = '<option value="">Gagal memuatkan kelas</option>';
-      showAlert(formAlert, 'Gagal memuatkan senarai kelas: ' + err.message, 'error');
+      showAlert(icAlert, 'Ralat menyemak: ' + (err.message || err.code), 'error');
+    } finally {
+      semakBtn.disabled = false;
+      semakBtn.textContent = '🔍 Semak';
     }
   }
 
-  classSelect.addEventListener('change', () => {
-    const code = classSelect.value;
-    studentSelect.innerHTML = '<option value="">— Sila pilih nama anak —</option>';
-    const names = classData[code] || [];
-    if (!code) {
-      studentSelect.innerHTML = '<option value="">— Pilih kelas dahulu —</option>';
-      studentSelect.disabled = true;
-      return;
-    }
-    if (!names.length) {
-      studentSelect.innerHTML = '<option value="">Tiada senarai murid</option>';
-      studentSelect.disabled = true;
-      return;
-    }
-    names.forEach(name => {
-      const opt = document.createElement('option');
-      opt.value = name;
-      opt.textContent = name;
-      studentSelect.appendChild(opt);
-    });
-    studentSelect.disabled = false;
+  // ============ Proceed to form ============
+  proceedBtn.addEventListener('click', () => {
+    if (!currentStudent) return;
+    formStudentName.textContent = currentStudent.name;
+    formClassCode.textContent = 'Kelas: ' + currentStudent.classLabel;
+    icCard.classList.add('hidden');
+    formCard.classList.remove('hidden');
+  });
+
+  changeStudentBtn.addEventListener('click', () => {
+    formCard.classList.add('hidden');
+    icCard.classList.remove('hidden');
+    icInput.value = '';
+    studentFound.classList.add('hidden');
+    hideAlert(icAlert);
+    currentStudent = null;
+    setTimeout(() => icInput.focus(), 100);
   });
 
   // ============ Date toggle ============
@@ -457,24 +489,19 @@
     fileLabelText.innerHTML = '<div style="font-size:1.3rem;">✅</div><div class="file-name">' + escapeHtml(file.name) + '</div><div style="font-size:.75rem;color:#6b7280;margin-top:2px;">' + (file.size / 1024).toFixed(0) + ' KB</div>';
   });
 
-  function escapeHtml(s) {
-    return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  }
-
   // ============ Submit ============
   submitBtn.addEventListener('click', submitReport);
 
   async function submitReport() {
     hideAlert(formAlert);
 
-    // Validate
-    const classCode = classSelect.value;
-    const studentName = studentSelect.value;
+    if (!currentStudent) {
+      return showAlert(formAlert, 'Maklumat anak hilang. Sila semak IC semula.', 'error');
+    }
+
     const reason = reasonSelect.value;
     const file = evidenceFile.files[0];
 
-    if (!classCode) return showAlert(formAlert, 'Sila pilih kelas.', 'error');
-    if (!studentName) return showAlert(formAlert, 'Sila pilih nama anak.', 'error');
     if (!reason) return showAlert(formAlert, 'Sila pilih sebab ketidakhadiran.', 'error');
     if (!file) return showAlert(formAlert, 'Sila lampirkan bukti ketidakhadiran.', 'error');
 
@@ -492,20 +519,21 @@
     submitBtn.innerHTML = '<span class="spinner"></span> Menghantar...';
 
     try {
-      // 1. Generate report ID
+      const classCode = currentStudent.classCode;
       const reportRef = db.ref('absenceReports/' + classCode).push();
       const reportId = reportRef.key;
 
-      // 2. Upload file to Storage (sk-sri-aman-database)
+      // Upload to Storage
       const safeFilename = file.name.replace(/[^\w.\-]/g, '_');
       const storagePath = 'absenceEvidence/' + classCode + '/' + reportId + '/' + safeFilename;
       const fileRef = storage.ref(storagePath);
       const uploadSnap = await fileRef.put(file, { contentType: file.type });
       const evidenceUrl = await uploadSnap.ref.getDownloadURL();
 
-      // 3. Write report record to RTDB
+      // Write report
       const reportData = {
-        studentName: studentName,
+        studentName: currentStudent.name,
+        studentIC: currentStudent.ic,
         reason: reason,
         dateStart: startDate,
         dateEnd: endDate,
@@ -521,7 +549,6 @@
       };
       await reportRef.set(reportData);
 
-      // 4. Reset form
       showToast('✅ Laporan berjaya dihantar. Guru kelas akan semak.');
       resetForm();
     } catch (err) {
@@ -534,9 +561,6 @@
   }
 
   function resetForm() {
-    classSelect.value = '';
-    studentSelect.innerHTML = '<option value="">— Pilih kelas dahulu —</option>';
-    studentSelect.disabled = true;
     singleDayCheck.checked = true;
     dateRangeWrap.classList.add('hidden');
     singleDayInfo.classList.remove('hidden');
@@ -546,10 +570,16 @@
     evidenceFile.value = '';
     fileLabel.classList.remove('has-file');
     fileLabelText.innerHTML = '<div style="font-size:1.3rem;">📎</div><div style="font-size:.85rem;color:#6b7280;margin-top:4px;">Klik untuk pilih fail (maks 5MB)</div>';
-  }
 
-  // Default placeholder email/pwd to ease testing (still required to be typed)
-  loginEmail.placeholder = PARENT_EMAIL;
+    // Kembali ke IC screen selepas submit, supaya parent boleh laporkan anak lain juga
+    setTimeout(() => {
+      formCard.classList.add('hidden');
+      icCard.classList.remove('hidden');
+      icInput.value = '';
+      studentFound.classList.add('hidden');
+      currentStudent = null;
+    }, 1500);
+  }
 
 })();
 </script>
